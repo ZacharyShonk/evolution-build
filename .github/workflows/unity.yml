@@ -5,9 +5,7 @@ on:
 
 jobs:
   build:
-    name: Build for ${{ matrix.targetPlatform }}
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         targetPlatform:
@@ -16,37 +14,32 @@ jobs:
           - WebGL
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Cache Library
         uses: actions/cache@v3
         with:
           path: Library
-          key: Library-${{ matrix.targetPlatform }}-${{ hashFiles('**/ProjectSettings/ProjectVersion.txt') }}
+          key: Library-${{ matrix.targetPlatform }}-${{ hashFiles('ProjectSettings/ProjectVersion.txt') }}
           restore-keys: |
             Library-${{ matrix.targetPlatform }}-
 
-      - name: Setup Unity
-        uses: game-ci/unity-setup@v2
+      - name: Build project
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL:   ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD:${{ secrets.UNITY_PASSWORD }}
         with:
           unityVersion: 2018.4.36f1
-
-      - name: Activate Unity
-        uses: game-ci/unity-activate@v1
-        env:
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-
-      - name: Build ${{ matrix.targetPlatform }}
-        uses: game-ci/unity-builder@v3
-        with:
           targetPlatform: ${{ matrix.targetPlatform }}
-          buildPath: releases/${{ matrix.targetPlatform }}
+          buildsPath: releases  # outputs into releases/StandaloneWindows64, etc.
 
-      - name: Upload Build
-        uses: actions/upload-artifact@v4
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
         with:
-          name: Build-${{ matrix.targetPlatform }}
+          name: ${{ matrix.targetPlatform }}-Build
           path: releases/${{ matrix.targetPlatform }}
