@@ -2,27 +2,29 @@ name: Actions 😎
 
 on:
   workflow_dispatch:
-  
+
 jobs:
   build:
     name: Build my project ✨
     runs-on: ubuntu-latest
+
     steps:
-      # Checkout
+      # Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           lfs: true
 
-      # Cache
-      - uses: actions/cache@v3
+      # Cache Unity Library
+      - name: Cache Unity Library
+        uses: actions/cache@v4
         with:
           path: Library
           key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
           restore-keys: |
             Library-
 
-      # Test
+      # Run Unity tests
       - name: Run tests
         uses: game-ci/unity-test-runner@v4
         env:
@@ -31,8 +33,10 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           githubToken: ${{ secrets.GITHUB_TOKEN }}
+          testMode: all
+          projectPath: .
 
-      # Build
+      # Build Unity project
       - name: Build project
         uses: game-ci/unity-builder@v4
         env:
@@ -41,9 +45,11 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           targetPlatform: WebGL
+          projectPath: .
 
-      # Output
-      - uses: actions/upload-artifact@v3
+      # Upload build artifacts
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
         with:
           name: Build
-          path: build
+          path: build/WebGL
