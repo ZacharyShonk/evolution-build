@@ -1,92 +1,49 @@
-name: Unity Build and Release
+name: Actions 😎
 
 on:
   workflow_dispatch:
-
+  
 jobs:
   build:
+    name: Build my project ✨
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        targetPlatform:
-          - StandaloneWindows64
-          - StandaloneLinux64
-          - WebGL
-
     steps:
+      # Checkout
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           lfs: true
 
-      - name: Cache Unity Library
-        uses: actions/cache@v3
+      # Cache
+      - uses: actions/cache@v3
         with:
           path: Library
-          key: Library-${{ matrix.targetPlatform }}-${{ hashFiles('ProjectSettings/ProjectVersion.txt') }}
+          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
           restore-keys: |
-            Library-${{ matrix.targetPlatform }}-
+            Library-
 
-      - name: Build with Unity
+      # Test
+      - name: Run tests
+        uses: game-ci/unity-test-runner@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      # Build
+      - name: Build project
         uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
-          unityVersion: 2018.4.36f1
-          targetPlatform: ${{ matrix.targetPlatform }}
-          buildsPath: releases
+          targetPlatform: WebGL
 
-      - name: Zip build folder
-        run: |
-          cd releases/${{ matrix.targetPlatform }}
-          zip -r ../../${{ matrix.targetPlatform }}.zip .
-
-      - name: Upload zipped build as artifact (optional)
-        uses: actions/upload-artifact@v4
+      # Output
+      - uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.targetPlatform }}-build-zip
-          path: ${{ matrix.targetPlatform }}.zip
-
-  create_release:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: release-${{ github.run_number }}
-          release_name: Release #${{ github.run_number }}
-          draft: false
-          prerelease: false
-
-      - name: Upload release assets
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: StandaloneWindows64.zip
-          asset_name: StandaloneWindows64.zip
-          asset_content_type: application/zip
-
-      - name: Upload release assets
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: StandaloneLinux64.zip
-          asset_name: StandaloneLinux64.zip
-          asset_content_type: application/zip
-
-      - name: Upload release assets
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: WebGL.zip
-          asset_name: WebGL.zip
-          asset_content_type: application/zip
+          name: Build
+          path: build
