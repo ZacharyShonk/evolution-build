@@ -1,0 +1,52 @@
+name: Manual Unity Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build for ${{ matrix.targetPlatform }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        targetPlatform:
+          - StandaloneWindows64
+          - StandaloneLinux64
+          - WebGL
+
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Cache Unity library
+        uses: actions/cache@v3
+        with:
+          path: Library
+          key: Library-${{ matrix.targetPlatform }}-${{ hashFiles('**/ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: |
+            Library-${{ matrix.targetPlatform }}-
+
+      - name: Set up Unity
+        uses: game-ci/unity-setup@v3
+        with:
+          unityVersion: 2018.4.36f1
+
+      - name: Activate Unity
+        uses: game-ci/unity-activate@v1
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+
+      - name: Build project
+        uses: game-ci/unity-builder@v3
+        with:
+          targetPlatform: ${{ matrix.targetPlatform }}
+          buildPath: releases/${{ matrix.targetPlatform }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.targetPlatform }}-Build
+          path: releases/${{ matrix.targetPlatform }}
