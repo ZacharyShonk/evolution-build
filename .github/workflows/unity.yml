@@ -16,10 +16,10 @@ jobs:
           - WebGL
 
     steps:
-      - name: Checkout project
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Cache Unity library
+      - name: Cache Library
         uses: actions/cache@v3
         with:
           path: Library
@@ -27,8 +27,8 @@ jobs:
           restore-keys: |
             Library-${{ matrix.targetPlatform }}-
 
-      - name: Set up Unity
-        uses: game-ci/unity-setup@v3
+      - name: Setup Unity
+        uses: game-ci/unity-setup@v2
         with:
           unityVersion: 2018.4.36f1
 
@@ -39,14 +39,14 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
 
-      - name: Build project
+      - name: Build ${{ matrix.targetPlatform }}
         uses: game-ci/unity-builder@v3
         with:
           targetPlatform: ${{ matrix.targetPlatform }}
           buildPath: releases/${{ matrix.targetPlatform }}
 
-      - name: Upload artifacts
+      - name: Upload Build
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.targetPlatform }}-Build
+          name: Build-${{ matrix.targetPlatform }}
           path: releases/${{ matrix.targetPlatform }}
